@@ -1,0 +1,4 @@
+*.png
+*.zip
+*.exe
+server/config.toml

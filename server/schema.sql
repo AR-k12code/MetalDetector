@@ -1,0 +1,15 @@
+CREATE TABLE `metaldetector`.`pings` (
+	`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`serverTime` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`requestIP` VARCHAR(39) NOT NULL,
+	`clientTime` DATETIME NULL,
+	`sessionStart` DATETIME NULL,
+	`serial` VARCHAR(20) NULL,
+	`localIPv4` VARCHAR(15) NULL,
+	`localIPv6` VARCHAR(39) NULL,
+	`location` POINT NULL,
+	`accuracy` FLOAT UNSIGNED NULL,
+	`geoTime` DATETIME NULL,
+	`email` VARCHAR(250) NULL,
+	PRIMARY KEY (`id`)
+) ENGINE = ARCHIVE CHARSET=utf8 COLLATE utf8_bin

@@ -1,0 +1,20 @@
+{
+	"type": "object",
+	"properties": {
+		"server": {
+			"title": "Server URL",
+			"description": "reports will be periodically POSTed to this URL",
+			"type": "string"
+		},
+		"interval": {
+			"title": "Report Interval",
+			"description": "How frequently you want reports in minutes.",
+			"type": "integer"
+		},
+		"maxGeoAge": {
+			"title": "Max Geolocation Age",
+			"description": "How stale (in seconds) is geolocation allowed to be. A lower value will result in higher power usage.",
+			"type": "integer"
+		}
+	}
+}
