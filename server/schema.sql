@@ -5,7 +5,7 @@
 -- Dumped from database version 13.2
 -- Dumped by pg_dump version 13.2
 
--- Started on 2021-04-01 16:17:51
+-- Started on 2021-04-22 08:41:15
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -678,8 +678,8 @@ GRANT USAGE ON SCHEMA public TO ro_user;
 -- Name: TABLE assets; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT INSERT,TRUNCATE ON TABLE public.assets TO metaldetector;
 GRANT SELECT ON TABLE public.assets TO ro_user;
+GRANT SELECT,INSERT,TRUNCATE ON TABLE public.assets TO metaldetector;
 
 
 --
@@ -726,8 +726,8 @@ GRANT SELECT ON TABLE public.pings TO ro_user;
 -- Name: TABLE users; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT INSERT,TRUNCATE ON TABLE public.users TO metaldetector;
 GRANT SELECT ON TABLE public.users TO ro_user;
+GRANT SELECT,INSERT,TRUNCATE ON TABLE public.users TO metaldetector;
 
 
 --
@@ -759,9 +759,8 @@ GRANT INSERT,TRUNCATE ON TABLE public.students TO metaldetector;
 GRANT SELECT ON TABLE public.students TO ro_user;
 
 
--- Completed on 2021-04-01 16:17:52
+-- Completed on 2021-04-22 08:41:17
 
 --
 -- PostgreSQL database dump complete
 --
-
