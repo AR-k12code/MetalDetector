@@ -1,0 +1,37 @@
+{
+	"manifest_version": 2,
+	"name": "Metal Detector Disabled Kiosk",
+	"version": "0.5",
+	"description": "A device tracking tool to help administrators find lost or stolen chromebooks",
+	"icons": {
+		"16": "icon16.png",
+		"24": "icon24.png",
+		"32": "icon32.png",
+		"48": "icon48.png",
+		"64": "icon64.png",
+		"128": "icon128.png",
+		"256": "icon256.png",
+		"512": "icon512.png"
+	},
+	"offline_enabled": false,
+	"permissions": [
+		"geolocation",
+		"enterprise.deviceAttributes",
+		"enterprise.networkingAttributes",
+		"alarms",
+		"storage"
+	],
+	"app": {
+		"background": {
+			"scripts": [
+				"background.js"
+			],
+			"persistent": false
+		}
+	},
+	"storage": {
+		"managed_schema": "schema.json"
+	},
+	"kiosk_enabled": true,
+	"kiosk_only" : true
+}
