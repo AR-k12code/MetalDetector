@@ -1,7 +1,7 @@
 {
 	"manifest_version": 2,
-	"name": "Metal Detector Disabled Kiosk",
-	"version": "0.5",
+	"name": "Metal Detector Kiosk",
+	"version": "0.9",
 	"description": "A device tracking tool to help administrators find lost or stolen chromebooks",
 	"icons": {
 		"16": "icon16.png",
@@ -17,9 +17,9 @@
 	"permissions": [
 		"geolocation",
 		"enterprise.deviceAttributes",
-		"enterprise.networkingAttributes",
 		"alarms",
-		"storage"
+		"storage",
+		"webview"
 	],
 	"app": {
 		"background": {
