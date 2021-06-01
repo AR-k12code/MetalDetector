@@ -13,6 +13,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	admin "google.golang.org/api/admin/directory/v1"
+	"google.golang.org/api/verifiedaccess/v1"
 )
 
 // Retrieve a token, saves the token, then returns the generated client.
@@ -71,7 +72,7 @@ func saveToken(path string, token *oauth2.Token) {
 	json.NewEncoder(f).Encode(token)
 }
 
-func GAdmin() *admin.Service {
+func OAuthClient() *http.Client {
 	credFile := Path("credentials.json")
 	b, err := ioutil.ReadFile(credFile)
 	if err != nil {
@@ -81,15 +82,25 @@ func GAdmin() *admin.Service {
 	// If modifying these scopes, delete your previously saved token.json.
 	config, err := google.ConfigFromJSON(b,
 		admin.AdminDirectoryDeviceChromeosScope,
+		verifiedaccess.VerifiedaccessScope,
 	)
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
 
-	client := getClient(config)
+	return getClient(config)
+}
 
-	ga, err := admin.New(client)
+func GAdmin() *admin.Service {
+	ga, err := admin.New(OAuthClient())
 	jgh.PanicOnErr(err)
 
 	return ga
+}
+
+func VAS() *verifiedaccess.ChallengeService {
+	service, err := verifiedaccess.New(OAuthClient())
+	jgh.PanicOnErr(err)
+
+	return verifiedaccess.NewChallengeService(service)
 }

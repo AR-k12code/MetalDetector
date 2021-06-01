@@ -1,7 +1,7 @@
 {
 	"manifest_version": 2,
 	"name": "Metal Detector",
-	"version": "1.0",
+	"version": "1.3",
 	"description": "A tracking extension to help administrators find lost or stolen chromebooks",
 	"icons": {
 		"16": "icon16.png",
@@ -21,7 +21,9 @@
 		"enterprise.deviceAttributes",
 		"enterprise.networkingAttributes",
 		"alarms",
-		"storage"
+		"storage",
+		"enterprise.platformKeys",
+		"<all_urls>"
 	],
 	"background": {
 		"scripts": ["background.js"],

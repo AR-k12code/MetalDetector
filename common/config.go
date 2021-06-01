@@ -18,12 +18,13 @@ import (
 // Config contains values from the main config file
 var Config = struct {
 	Server struct {
-		Listen   string
-		Redirect string
+		Listen      string
+		Redirect    string
+		RequireAuth bool
 	}
-	LetsEncrypt simplecert.Config
-	PgSQL       pgx.ConnPoolConfig
-	ESchool     struct {
+	AutoCert simplecert.Config
+	PgSQL    pgx.ConnPoolConfig
+	ESchool  struct {
 		APIKey    string
 		ReportURL string
 	}
@@ -48,10 +49,11 @@ var Config = struct {
 // serialize to TOML
 type MarshalableConfig struct {
 	Server struct {
-		Listen   string
-		Redirect string
+		Listen      string
+		Redirect    string
+		RequireAuth bool
 	}
-	LetsEncrypt struct {
+	AutoCert struct {
 		RenewBefore   int
 		CheckInterval time.Duration
 		SSLEmail      string
@@ -101,8 +103,8 @@ type MarshalableConfig struct {
 // read in the config
 func init() {
 	// set defaults
-	copier.Copy(&Config.LetsEncrypt, simplecert.Default)
-	Config.LetsEncrypt.TLSAddress = "" // we probably use port 443 elsewhere
+	copier.Copy(&Config.AutoCert, simplecert.Default)
+	Config.AutoCert.TLSAddress = "" // we probably use port 443 elsewhere
 	Config.Server.Listen = ":443"
 	Config.LDAP.Filter = "(&(objectClass=user)(objectCategory=Person))"
 	Config.LDAP.DateFormat = "20060102150405.0Z07"
@@ -110,12 +112,12 @@ func init() {
 	Config.Helpdesk.MaxConcurentRequests = 1
 
 	// get "config.toml" file next to this executable
-	exePath, err := os.Executable()
-	jgh.PanicOnErr(err)
-	ConfigDir := filepath.Dir(exePath)
-	configFile := filepath.Join(ConfigDir, "config.toml")
-	configTOML, err := ioutil.ReadFile(configFile)
-	jgh.PanicOnErr(err)
+	configTOML, err := ioutil.ReadFile(Path("config.toml"))
+	if os.IsNotExist(err) {
+		fmt.Println("WARNING: no config.toml found. Using defaults.")
+	} else {
+		jgh.PanicOnErr(err)
+	}
 
 	// read config file into global Config variable
 	err = toml.Unmarshal(configTOML, &Config)
@@ -138,13 +140,35 @@ func init() {
 	fmt.Println()
 }
 
+var workingDirectoryMode = false
+
 // get the full path to a config file next to this exe
 func Path(filename string) string {
-	// get "config.toml" file next to this executable
+	// get path to file next to this EXE
 	exePath, err := os.Executable()
 	jgh.PanicOnErr(err)
 	configDir := filepath.Dir(exePath)
-	return filepath.Join(configDir, filename)
+	path := filepath.Join(configDir, filename)
+
+	// if we have previously been fetching files from the working directory
+	// continue doing that
+	if workingDirectoryMode {
+		return filename
+	}
+
+	// if the file does not exist, but does exist in the current working
+	// directory, return the path to the one in the working directory
+	_, err = os.Stat(path)
+	if os.IsNotExist(err) {
+		// check if it exists in the working directory
+		_, err = os.Stat(filename)
+		if err == nil {
+			workingDirectoryMode = true
+			return filename
+		}
+	}
+
+	return path
 }
 
 // replace a string wih the appropriate number of *s

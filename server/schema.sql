@@ -5,8 +5,6 @@
 -- Dumped from database version 13.2
 -- Dumped by pg_dump version 13.2
 
--- Started on 2021-05-04 10:06:56
-
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -19,7 +17,6 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- TOC entry 3535 (class 3456 OID 16412)
 -- Name: case_insensitive; Type: COLLATION; Schema: public; Owner: postgres
 --
 
@@ -29,7 +26,6 @@ CREATE COLLATION public.case_insensitive (provider = icu, deterministic = false,
 ALTER COLLATION public.case_insensitive OWNER TO postgres;
 
 --
--- TOC entry 3 (class 3079 OID 20215)
 -- Name: ltree; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -37,8 +33,6 @@ CREATE EXTENSION IF NOT EXISTS ltree WITH SCHEMA public;
 
 
 --
--- TOC entry 4094 (class 0 OID 0)
--- Dependencies: 3
 -- Name: EXTENSION ltree; Type: COMMENT; Schema: -; Owner: 
 --
 
@@ -46,7 +40,6 @@ COMMENT ON EXTENSION ltree IS 'data type for hierarchical tree-like structures';
 
 
 --
--- TOC entry 2 (class 3079 OID 16424)
 -- Name: postgis; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -54,8 +47,6 @@ CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
 
 
 --
--- TOC entry 4095 (class 0 OID 0)
--- Dependencies: 2
 -- Name: EXTENSION postgis; Type: COMMENT; Schema: -; Owner: 
 --
 
@@ -63,7 +54,6 @@ COMMENT ON EXTENSION postgis IS 'PostGIS geometry and geography spatial types an
 
 
 --
--- TOC entry 1415 (class 1247 OID 31980)
 -- Name: asset_status; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -81,7 +71,6 @@ CREATE TYPE public.asset_status AS ENUM (
 ALTER TYPE public.asset_status OWNER TO postgres;
 
 --
--- TOC entry 1475 (class 1247 OID 20401)
 -- Name: chromebook_status; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -101,7 +90,6 @@ CREATE TYPE public.chromebook_status AS ENUM (
 ALTER TYPE public.chromebook_status OWNER TO postgres;
 
 --
--- TOC entry 1488 (class 1247 OID 20670)
 -- Name: grade; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -129,7 +117,6 @@ CREATE TYPE public.grade AS ENUM (
 ALTER TYPE public.grade OWNER TO postgres;
 
 --
--- TOC entry 1485 (class 1247 OID 20661)
 -- Name: student_status; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -144,35 +131,35 @@ CREATE TYPE public.student_status AS ENUM (
 ALTER TYPE public.student_status OWNER TO postgres;
 
 --
--- TOC entry 1003 (class 1255 OID 52273)
--- Name: insert_ping(inet, integer, integer, text, inet, inet, double precision, double precision, double precision, integer, text); Type: PROCEDURE; Schema: public; Owner: postgres
+-- Name: insert_ping(inet, uuid, integer, integer, text, inet, inet, real, real, real, integer, text); Type: PROCEDURE; Schema: public; Owner: postgres
 --
 
-CREATE PROCEDURE public.insert_ping(request_ip inet DEFAULT NULL::inet, client_time integer DEFAULT NULL::integer, session_start integer DEFAULT NULL::integer, serial text DEFAULT NULL::text, local_ipv4 inet DEFAULT NULL::inet, local_ipv6 inet DEFAULT NULL::inet, latitude double precision DEFAULT NULL::double precision, longitude double precision DEFAULT NULL::double precision, accuracy double precision DEFAULT NULL::double precision, location_time integer DEFAULT NULL::integer, email text DEFAULT NULL::text)
+CREATE PROCEDURE public.insert_ping(request_ip inet DEFAULT NULL::inet, device_id uuid DEFAULT NULL::uuid, client_time integer DEFAULT NULL::integer, session_start integer DEFAULT NULL::integer, serial text DEFAULT NULL::text, local_ipv4 inet DEFAULT NULL::inet, local_ipv6 inet DEFAULT NULL::inet, latitude real DEFAULT NULL::real, longitude real DEFAULT NULL::real, accuracy real DEFAULT NULL::real, location_time integer DEFAULT NULL::integer, email text DEFAULT NULL::text)
     LANGUAGE sql
     AS $_$
 UPDATE pings_raw
 SET latest_for_device = false
 WHERE
 	latest_for_session = true AND
-	serial = $4;
+	serial = $5;
 
 UPDATE pings_raw
 SET latest_for_user = false
 WHERE
 	latest_for_session = true AND
-	email = $11;
+	email = $12;
 
 UPDATE pings_raw
 SET latest_for_session = false
 WHERE
 	latest_for_session = true AND
-	serial = $4 AND
-	email = $11 AND
-	session_start = $3;
+	serial = $5 AND
+	email = $12 AND
+	session_start = $4;
 
 INSERT INTO pings_raw (
 	request_ip,
+	device_id,
 	client_time,
 	session_start,
 	serial,
@@ -189,6 +176,7 @@ INSERT INTO pings_raw (
 	latest_for_session
 ) VALUES (
 	request_ip,
+	device_id,
 	client_time,
 	session_start,
 	serial,
@@ -215,14 +203,13 @@ INSERT INTO pings_raw (
 $_$;
 
 
-ALTER PROCEDURE public.insert_ping(request_ip inet, client_time integer, session_start integer, serial text, local_ipv4 inet, local_ipv6 inet, latitude double precision, longitude double precision, accuracy double precision, location_time integer, email text) OWNER TO postgres;
+ALTER PROCEDURE public.insert_ping(request_ip inet, device_id uuid, client_time integer, session_start integer, serial text, local_ipv4 inet, local_ipv6 inet, latitude real, longitude real, accuracy real, location_time integer, email text) OWNER TO postgres;
 
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
 --
--- TOC entry 212 (class 1259 OID 32765)
 -- Name: assets; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -241,7 +228,6 @@ CREATE TABLE public.assets (
 ALTER TABLE public.assets OWNER TO postgres;
 
 --
--- TOC entry 207 (class 1259 OID 19888)
 -- Name: buildings; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -254,7 +240,6 @@ CREATE TABLE public.buildings (
 ALTER TABLE public.buildings OWNER TO postgres;
 
 --
--- TOC entry 213 (class 1259 OID 33450)
 -- Name: chromebooks; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -285,13 +270,13 @@ CREATE TABLE public.chromebooks (
 ALTER TABLE public.chromebooks OWNER TO postgres;
 
 --
--- TOC entry 208 (class 1259 OID 28951)
 -- Name: pings_raw; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.pings_raw (
     server_time integer DEFAULT date_part('epoch'::text, now()),
     request_ip inet,
+    device_id uuid,
     client_time integer,
     session_start integer,
     serial text COLLATE public.case_insensitive,
@@ -313,7 +298,6 @@ PARTITION BY LIST (latest_for_session);
 ALTER TABLE public.pings_raw OWNER TO postgres;
 
 --
--- TOC entry 215 (class 1259 OID 52260)
 -- Name: pings; Type: VIEW; Schema: public; Owner: postgres
 --
 
@@ -336,26 +320,28 @@ CREATE VIEW public.pings AS
            FROM public.pings_raw pings_raw_1
           GROUP BY pings_raw_1.serial, pings_raw_1.email, pings_raw_1.session_start
         )
- SELECT to_timestamp((pings_raw.server_time)::double precision) AS server_time,
+ SELECT to_timestamp((pings_raw.server_time)) AS server_time,
     pings_raw.request_ip,
-    to_timestamp((pings_raw.client_time)::double precision) AS client_time,
-    to_timestamp((pings_raw.session_start)::double precision) AS session_start,
+    pings_raw.device_id,
+    to_timestamp((pings_raw.client_time)) AS client_time,
+    to_timestamp((pings_raw.session_start)) AS session_start,
     pings_raw.serial,
     pings_raw.local_ipv4,
     pings_raw.local_ipv6,
     pings_raw.latitude,
     pings_raw.longitude,
     pings_raw.accuracy,
-    to_timestamp((pings_raw.location_time)::double precision) AS location_time,
+    to_timestamp((pings_raw.location_time)) AS location_time,
     pings_raw.email,
     pings_raw.closest_building,
     pings_raw.latest_for_device,
     pings_raw.latest_for_user,
     pings_raw.latest_for_session,
-    public.st_distance((public.st_makepoint((pings_raw.longitude)::double precision, (pings_raw.latitude)::double precision))::public.geography, closest_buildings.location, false) AS distance_to_school,
+    public.st_distance((public.st_makepoint((pings_raw.longitude), (pings_raw.latitude)))::public.geography, closest_buildings.location, false) AS distance_to_school,
     (pings_raw.request_ip << '10.0.0.0/8'::inet) AS on_network,
-    (to_timestamp((pings_raw.client_time)::double precision) - to_timestamp((pings_raw.location_time)::double precision)) AS location_age,
-    (to_timestamp((pings_raw.client_time)::double precision) - to_timestamp((pings_raw.session_start)::double precision)) AS session_age
+    (pings_raw.device_id IS NOT NULL) AS authenticated,
+    (to_timestamp((pings_raw.client_time)) - to_timestamp((pings_raw.location_time))) AS location_age,
+    (to_timestamp((pings_raw.client_time)) - to_timestamp((pings_raw.session_start))) AS session_age
    FROM (public.pings_raw
      LEFT JOIN public.buildings closest_buildings ON ((pings_raw.closest_building = closest_buildings.abbreviation)));
 
@@ -365,13 +351,13 @@ ALTER TABLE public.pings OWNER TO postgres;
 SET default_tablespace = compressed;
 
 --
--- TOC entry 210 (class 1259 OID 28968)
 -- Name: pings_raw_archive; Type: TABLE; Schema: public; Owner: postgres; Tablespace: compressed
 --
 
 CREATE TABLE public.pings_raw_archive (
     server_time integer DEFAULT date_part('epoch'::text, now()),
     request_ip inet,
+    device_id uuid,
     client_time integer,
     session_start integer,
     serial text COLLATE public.case_insensitive,
@@ -395,13 +381,13 @@ ALTER TABLE public.pings_raw_archive OWNER TO postgres;
 SET default_tablespace = '';
 
 --
--- TOC entry 209 (class 1259 OID 28958)
 -- Name: pings_raw_latest; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.pings_raw_latest (
     server_time integer DEFAULT date_part('epoch'::text, now()),
     request_ip inet,
+    device_id uuid,
     client_time integer,
     session_start integer,
     serial text COLLATE public.case_insensitive,
@@ -423,7 +409,6 @@ ALTER TABLE ONLY public.pings_raw ATTACH PARTITION public.pings_raw_latest FOR V
 ALTER TABLE public.pings_raw_latest OWNER TO postgres;
 
 --
--- TOC entry 211 (class 1259 OID 29866)
 -- Name: users; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -444,7 +429,6 @@ CREATE TABLE public.users (
 ALTER TABLE public.users OWNER TO postgres;
 
 --
--- TOC entry 216 (class 1259 OID 52265)
 -- Name: predictions; Type: VIEW; Schema: public; Owner: postgres
 --
 
@@ -463,7 +447,6 @@ CREATE VIEW public.predictions AS
 ALTER TABLE public.predictions OWNER TO postgres;
 
 --
--- TOC entry 214 (class 1259 OID 33468)
 -- Name: students; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -484,7 +467,6 @@ CREATE TABLE public.students (
 ALTER TABLE public.students OWNER TO postgres;
 
 --
--- TOC entry 3938 (class 2606 OID 52115)
 -- Name: assets assets_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -493,7 +475,6 @@ ALTER TABLE ONLY public.assets
 
 
 --
--- TOC entry 3925 (class 2606 OID 52138)
 -- Name: buildings buildings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -502,7 +483,6 @@ ALTER TABLE ONLY public.buildings
 
 
 --
--- TOC entry 3940 (class 2606 OID 33459)
 -- Name: chromebooks chromebooks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -511,7 +491,6 @@ ALTER TABLE ONLY public.chromebooks
 
 
 --
--- TOC entry 3943 (class 2606 OID 33476)
 -- Name: students students_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -520,7 +499,6 @@ ALTER TABLE ONLY public.students
 
 
 --
--- TOC entry 3936 (class 2606 OID 52259)
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -529,7 +507,6 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 3941 (class 1259 OID 52177)
 -- Name: chromebooks_serial; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -537,7 +514,6 @@ CREATE INDEX chromebooks_serial ON public.chromebooks USING hash (serial);
 
 
 --
--- TOC entry 3926 (class 1259 OID 52218)
 -- Name: pings_raw_email; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -545,7 +521,6 @@ CREATE INDEX pings_raw_email ON ONLY public.pings_raw USING btree (email);
 
 
 --
--- TOC entry 3932 (class 1259 OID 52220)
 -- Name: pings_raw_archive_email_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -553,7 +528,6 @@ CREATE INDEX pings_raw_archive_email_idx ON public.pings_raw_archive USING btree
 
 
 --
--- TOC entry 3927 (class 1259 OID 52215)
 -- Name: pings_raw_serial; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -561,7 +535,6 @@ CREATE INDEX pings_raw_serial ON ONLY public.pings_raw USING btree (serial);
 
 
 --
--- TOC entry 3933 (class 1259 OID 52217)
 -- Name: pings_raw_archive_serial_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -569,7 +542,6 @@ CREATE INDEX pings_raw_archive_serial_idx ON public.pings_raw_archive USING btre
 
 
 --
--- TOC entry 3928 (class 1259 OID 51921)
 -- Name: pings_raw_server_time; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -577,7 +549,6 @@ CREATE INDEX pings_raw_server_time ON ONLY public.pings_raw USING brin (server_t
 
 
 --
--- TOC entry 3934 (class 1259 OID 51923)
 -- Name: pings_raw_archive_server_time_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -585,7 +556,6 @@ CREATE INDEX pings_raw_archive_server_time_idx ON public.pings_raw_archive USING
 
 
 --
--- TOC entry 3929 (class 1259 OID 52219)
 -- Name: pings_raw_latest_email_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -593,7 +563,6 @@ CREATE INDEX pings_raw_latest_email_idx ON public.pings_raw_latest USING btree (
 
 
 --
--- TOC entry 3930 (class 1259 OID 52216)
 -- Name: pings_raw_latest_serial_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -601,7 +570,6 @@ CREATE INDEX pings_raw_latest_serial_idx ON public.pings_raw_latest USING btree 
 
 
 --
--- TOC entry 3931 (class 1259 OID 51922)
 -- Name: pings_raw_latest_server_time_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -609,7 +577,6 @@ CREATE INDEX pings_raw_latest_server_time_idx ON public.pings_raw_latest USING b
 
 
 --
--- TOC entry 3947 (class 0 OID 0)
 -- Name: pings_raw_archive_email_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
@@ -617,7 +584,6 @@ ALTER INDEX public.pings_raw_email ATTACH PARTITION public.pings_raw_archive_ema
 
 
 --
--- TOC entry 3948 (class 0 OID 0)
 -- Name: pings_raw_archive_serial_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
@@ -625,7 +591,6 @@ ALTER INDEX public.pings_raw_serial ATTACH PARTITION public.pings_raw_archive_se
 
 
 --
--- TOC entry 3949 (class 0 OID 0)
 -- Name: pings_raw_archive_server_time_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
@@ -633,7 +598,6 @@ ALTER INDEX public.pings_raw_server_time ATTACH PARTITION public.pings_raw_archi
 
 
 --
--- TOC entry 3944 (class 0 OID 0)
 -- Name: pings_raw_latest_email_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
@@ -641,7 +605,6 @@ ALTER INDEX public.pings_raw_email ATTACH PARTITION public.pings_raw_latest_emai
 
 
 --
--- TOC entry 3945 (class 0 OID 0)
 -- Name: pings_raw_latest_serial_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
@@ -649,7 +612,6 @@ ALTER INDEX public.pings_raw_serial ATTACH PARTITION public.pings_raw_latest_ser
 
 
 --
--- TOC entry 3946 (class 0 OID 0)
 -- Name: pings_raw_latest_server_time_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
@@ -657,7 +619,6 @@ ALTER INDEX public.pings_raw_server_time ATTACH PARTITION public.pings_raw_lates
 
 
 --
--- TOC entry 3950 (class 2606 OID 52221)
 -- Name: pings_raw pings_raw_closest_building_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -666,8 +627,6 @@ ALTER TABLE public.pings_raw
 
 
 --
--- TOC entry 4093 (class 0 OID 0)
--- Dependencies: 5
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
 --
 
@@ -677,8 +636,6 @@ GRANT USAGE ON SCHEMA public TO ro_user;
 
 
 --
--- TOC entry 4096 (class 0 OID 0)
--- Dependencies: 212
 -- Name: TABLE assets; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -687,8 +644,6 @@ GRANT SELECT,INSERT,TRUNCATE ON TABLE public.assets TO metaldetector;
 
 
 --
--- TOC entry 4097 (class 0 OID 0)
--- Dependencies: 207
 -- Name: TABLE buildings; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -697,8 +652,6 @@ GRANT SELECT ON TABLE public.buildings TO metaldetector;
 
 
 --
--- TOC entry 4098 (class 0 OID 0)
--- Dependencies: 213
 -- Name: TABLE chromebooks; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -707,8 +660,6 @@ GRANT SELECT ON TABLE public.chromebooks TO ro_user;
 
 
 --
--- TOC entry 4099 (class 0 OID 0)
--- Dependencies: 208
 -- Name: TABLE pings_raw; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -716,8 +667,6 @@ GRANT SELECT,INSERT,UPDATE ON TABLE public.pings_raw TO metaldetector;
 
 
 --
--- TOC entry 4100 (class 0 OID 0)
--- Dependencies: 215
 -- Name: TABLE pings; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -725,8 +674,6 @@ GRANT SELECT ON TABLE public.pings TO ro_user;
 
 
 --
--- TOC entry 4101 (class 0 OID 0)
--- Dependencies: 211
 -- Name: TABLE users; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -735,8 +682,6 @@ GRANT SELECT,INSERT,TRUNCATE ON TABLE public.users TO metaldetector;
 
 
 --
--- TOC entry 4102 (class 0 OID 0)
--- Dependencies: 216
 -- Name: TABLE predictions; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -745,25 +690,12 @@ GRANT SELECT ON TABLE public.predictions TO metaldetector;
 
 
 --
--- TOC entry 4103 (class 0 OID 0)
--- Dependencies: 203
--- Name: TABLE spatial_ref_sys; Type: ACL; Schema: public; Owner: postgres
---
-
-REVOKE SELECT ON TABLE public.spatial_ref_sys FROM metaldetector;
-
-
---
--- TOC entry 4104 (class 0 OID 0)
--- Dependencies: 214
 -- Name: TABLE students; Type: ACL; Schema: public; Owner: postgres
 --
 
 GRANT INSERT,TRUNCATE ON TABLE public.students TO metaldetector;
 GRANT SELECT ON TABLE public.students TO ro_user;
 
-
--- Completed on 2021-05-04 10:06:57
 
 --
 -- PostgreSQL database dump complete

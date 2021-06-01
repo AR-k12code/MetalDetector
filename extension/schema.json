@@ -6,6 +6,11 @@
 			"description": "reports will be periodically POSTed to this URL",
 			"type": "string"
 		},
+		"useAuth": {
+			"title": "Use Device Authorization",
+			"description": "Attempt to authenticate with the server using the Chrome Verified Access API. The server must support this.",
+			"type": "boolean"
+		},
 		"interval": {
 			"title": "Report Interval",
 			"description": "How frequently you want reports in minutes.",

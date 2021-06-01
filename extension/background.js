@@ -1,4 +1,22 @@
-// TODO: use chrome.enterprise.platformKeys for authentication
+function serializeArrayBuffer(buf) {
+	let binary = '';
+	let bytes = new Uint8Array(buf);
+	let len = bytes.byteLength;
+	for (var i = 0; i < len; i++) {
+		binary += String.fromCharCode(bytes[i]);
+	}
+	return window.btoa(binary);
+};
+
+function deserializeArrayBuffer(str) {
+	let binary_string = window.atob(str);
+	let len = binary_string.length;
+	let bytes = new Uint8Array(len);
+	for (var i = 0; i < len; i++) {
+		bytes[i] = binary_string.charCodeAt(i);
+	}
+	return bytes.buffer;
+};
 
 function timestamp() {
 	return Math.floor(Date.now() / 1000);
@@ -19,27 +37,49 @@ chrome.alarms.get(alarm => {
 });
 
 function sessionStart() {
-	chrome.storage.local.set({ sessionStart: timestamp() });
+	chrome.storage.local.set({ sessionStart: timestamp() }, sendReport());
 	console.log('session start');
 }
 
 chrome.runtime.onStartup.addListener(sessionStart);
 chrome.runtime.onInstalled.addListener(sessionStart);
 
-chrome.alarms.onAlarm.addListener(() => {
-	chrome.storage.managed.get('server', settings =>
-		reportData(data =>
-			fetch(settings.server, {
-				method: 'POST',
-				mode: 'no-cors',
-				// this is not text/plain, but it lets us skip CORS
-				headers: { 'Content-Type': 'text/plain' },
-				body: JSON.stringify(data)
-			})
-		)
+chrome.alarms.onAlarm.addListener(sendReport);
+
+async function sendReport() {
+	// get settings
+	const settings = await new Promise((resolve, reject) =>
+		chrome.storage.managed.get(['server', 'useAuth'], s => resolve(s))
 	);
+	
+	// get report data
+	const data = await new Promise((resolve, reject) =>
+		reportData(d => resolve(d))
+	);
+	
+	// add challengeResp to data if useAuth is enabled
+	if(settings.useAuth) {
+		// fetch challenge
+		const resp = await fetch(settings.server);
+		const respObj = await resp.json();
+		data.challengeResp = await new Promise((resolve, reject) =>
+			chrome.enterprise.platformKeys.challengeMachineKey(
+				deserializeArrayBuffer(respObj.challenge),
+				false,
+				r => resolve(serializeArrayBuffer(r))
+			)
+		);
+	}
+	
+	// send data to server
+	fetch(settings.server, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(data)
+	});
+
 	console.log('send report');
-});
+}
 
 function reportData(callback) {
 	chrome.identity.getProfileUserInfo({ accountStatus: 'ANY' }, user =>
