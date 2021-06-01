@@ -5,6 +5,7 @@ go 1.16
 require (
 	cloud.google.com/go v0.80.0 // indirect
 	github.com/9072997/jgh v0.0.0-20210331123944-f3017070e563
+	github.com/9072997/vas v0.0.0-20210525191509-9f00ac56acee
 	github.com/Azure/azure-sdk-for-go v53.0.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.7 // indirect
