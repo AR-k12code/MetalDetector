@@ -12,7 +12,7 @@ import (
 	"github.com/9072997/vas"
 	"github.com/foomo/simplecert"
 	"github.com/foomo/tlsconfig"
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v4"
 )
 
 // ClientPing represents the data in the JSON report submitted by

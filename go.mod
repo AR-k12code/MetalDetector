@@ -13,7 +13,6 @@ require (
 	github.com/aws/aws-sdk-go v1.38.10 // indirect
 	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/cloudflare/cloudflare-go v0.15.0 // indirect
-	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/exoscale/egoscale v1.19.0 // indirect
 	github.com/foomo/simplecert v1.8.3
 	github.com/foomo/tlsconfig v0.0.0-20180418120404-b67861b076c9
@@ -34,8 +33,7 @@ require (
 	github.com/gophercloud/utils v0.0.0-20210323225332-7b186010c04f // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
-	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
-	github.com/jackc/pgx v3.6.2+incompatible
+	github.com/jackc/pgx/v4 v4.11.0
 	github.com/jinzhu/copier v0.2.8
 	github.com/lib/pq v1.10.0 // indirect
 	github.com/linode/linodego v1.0.0 // indirect
@@ -46,7 +44,6 @@ require (
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/transip/gotransip/v6 v6.6.1 // indirect
 	go.uber.org/ratelimit v0.2.0 // indirect
-	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2 // indirect
 	golang.org/x/net v0.0.0-20210331212208-0fccb6fa2b5c
 	golang.org/x/oauth2 v0.0.0-20210323180902-22b0adad7558
 	golang.org/x/sys v0.0.0-20210331175145-43e1dd70ce54 // indirect

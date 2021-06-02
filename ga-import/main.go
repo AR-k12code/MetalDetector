@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/9072997/jgh"
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v4"
 	admin "google.golang.org/api/admin/directory/v1"
 )
 

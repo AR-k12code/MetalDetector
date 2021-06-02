@@ -7,7 +7,7 @@ import (
 
 	"github.com/9072997/jgh"
 	"github.com/go-ldap/ldap/v3"
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v4"
 )
 
 type User struct {

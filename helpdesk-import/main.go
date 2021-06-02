@@ -12,7 +12,7 @@ import (
 
 	"github.com/9072997/jgh"
 	"github.com/gammazero/workerpool"
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v4"
 )
 
 func main() {
