@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"metaldetector/common"
@@ -47,12 +48,12 @@ func main() {
 	jgh.PanicOnErr(err)
 
 	// start a transaction. If anything goes wrong, rollback.
-	tx, err := db.Begin()
+	tx, err := db.Begin(context.TODO())
 	jgh.PanicOnErr(err)
-	defer tx.Rollback()
+	defer tx.Rollback(context.TODO())
 
 	// clear the table
-	_, err = tx.Exec("TRUNCATE students")
+	_, err = tx.Exec(context.TODO(), "TRUNCATE students")
 	jgh.PanicOnErr(err)
 
 	// while the array contains values
@@ -71,11 +72,11 @@ func main() {
 	jgh.PanicOnErr(err)
 
 	// commit transaction
-	err = tx.Commit()
+	err = tx.Commit(context.TODO())
 	jgh.PanicOnErr(err)
 }
 
-func student2db(s Student, tx *pgx.Tx) error {
+func student2db(s Student, tx pgx.Tx) error {
 	switch strings.ToUpper(s.Grade) {
 	case "PK":
 		s.Grade = "PRE-K"
@@ -128,7 +129,7 @@ func student2db(s Student, tx *pgx.Tx) error {
 		return fmt.Errorf("invalid student status: %s", s.Status)
 	}
 
-	_, err := tx.Exec(
+	_, err := tx.Exec(context.TODO(),
 		`
 			INSERT INTO students (
 				student_id,

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -21,12 +22,12 @@ func main() {
 	defer db.Close()
 
 	// start a transaction. If anything goes wrong, rollback.
-	tx, err := db.Begin()
+	tx, err := db.Begin(context.TODO())
 	jgh.PanicOnErr(err)
-	defer tx.Rollback()
+	defer tx.Rollback(context.TODO())
 
 	// clear the table
-	_, err = tx.Exec("TRUNCATE assets")
+	_, err = tx.Exec(context.TODO(), "TRUNCATE assets")
 	jgh.PanicOnErr(err)
 
 	// Fetching info from the helpdesk is high latency, so run multiple
@@ -49,7 +50,7 @@ func main() {
 
 	// we will only imports assets that have serial numbers listed in
 	// Google Admin, so get a list of serial numbers in Google Admin
-	rows, err := db.Query("SELECT DISTINCT serial FROM chromebooks")
+	rows, err := db.Query(context.TODO(), "SELECT DISTINCT serial FROM chromebooks")
 	jgh.PanicOnErr(err)
 
 	// all the REST requests will be really loud, so disable logging
@@ -82,7 +83,7 @@ func main() {
 	insertWG.Wait()
 
 	// commit transaction
-	err = tx.Commit()
+	err = tx.Commit(context.TODO())
 	jgh.PanicOnErr(err)
 }
 
@@ -103,7 +104,7 @@ func wpProgress(wp *workerpool.WorkerPool, interval time.Duration) {
 	}
 }
 
-func asset2db(a Asset, tx *pgx.Tx) error {
+func asset2db(a Asset, tx pgx.Tx) error {
 	var assetNumber *int
 	an, err := strconv.Atoi(a.AssetNumber)
 	if err == nil {
@@ -135,6 +136,7 @@ func asset2db(a Asset, tx *pgx.Tx) error {
 	}
 
 	_, err = tx.Exec(
+		context.TODO(),
 		`
 			INSERT INTO assets (
 				serial,

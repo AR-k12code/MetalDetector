@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"metaldetector/common"
 	"time"
@@ -18,24 +19,27 @@ func main() {
 
 	// get devices in the admin console where the user or asset_id field
 	// does not match the value we would assign it
-	rows, err := db.Query(`
-		SELECT
-			predictions.device_id,
-			COALESCE(predicted_users.first_name || ' ' || predicted_users.last_name || ' <' || predictions.user || '>', 'No recent student logins') AS "user",
-			COALESCE(assigned_users.first_name || ' ' || assigned_users.last_name || ' <' || assets.client || '>', 'Not assigned') AS client
-		FROM chromebooks
-		LEFT JOIN predictions
-			ON chromebooks.device_id = predictions.device_id
-		LEFT JOIN users AS predicted_users
-			ON predictions.user = predicted_users.email
-		LEFT JOIN assets
-			ON chromebooks.serial = assets.serial
-		LEFT JOIN users AS assigned_users
-			ON assets.client = assigned_users.email
-		WHERE
-			chromebooks.user <> COALESCE(predicted_users.first_name || ' ' || predicted_users.last_name || ' <' || predictions.user || '>', 'No recent student logins') OR
-			chromebooks.asset_id <> COALESCE(assigned_users.first_name || ' ' || assigned_users.last_name || ' <' || assets.client || '>', 'Not assigned')
-	`)
+	rows, err := db.Query(
+		context.TODO(),
+		`
+			SELECT
+				predictions.device_id,
+				COALESCE(predicted_users.first_name || ' ' || predicted_users.last_name || ' <' || predictions.user || '>', 'No recent student logins') AS "user",
+				COALESCE(assigned_users.first_name || ' ' || assigned_users.last_name || ' <' || assets.client || '>', 'Not assigned') AS client
+			FROM chromebooks
+			LEFT JOIN predictions
+				ON chromebooks.device_id = predictions.device_id
+			LEFT JOIN users AS predicted_users
+				ON predictions.user = predicted_users.email
+			LEFT JOIN assets
+				ON chromebooks.serial = assets.serial
+			LEFT JOIN users AS assigned_users
+				ON assets.client = assigned_users.email
+			WHERE
+				chromebooks.user <> COALESCE(predicted_users.first_name || ' ' || predicted_users.last_name || ' <' || predictions.user || '>', 'No recent student logins') OR
+				chromebooks.asset_id <> COALESCE(assigned_users.first_name || ' ' || assigned_users.last_name || ' <' || assets.client || '>', 'Not assigned')
+		`,
+	)
 	jgh.PanicOnErr(err)
 	defer rows.Close()
 
@@ -50,13 +54,18 @@ func main() {
 		jgh.PanicOnErr(err)
 
 		// update admin console table to reflect the change we just made
-		_, err = db.Exec(`
-			UPDATE chromebooks
-			SET
-				"user" = $1,
-				asset_id = $2
-			WHERE device_id = $3
-		`, user, client, deviceID)
+		_, err = db.Exec(context.TODO(),
+			`
+				UPDATE chromebooks
+				SET
+					"user" = $1,
+					asset_id = $2
+				WHERE device_id = $3
+			`,
+			user,
+			client,
+			deviceID,
+		)
 		jgh.PanicOnErr(err)
 
 		// google gets mad if we go too fast

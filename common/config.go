@@ -10,7 +10,7 @@ import (
 
 	"github.com/9072997/jgh"
 	"github.com/foomo/simplecert"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/jinzhu/copier"
 	toml "github.com/pelletier/go-toml"
 )
@@ -23,7 +23,7 @@ var Config = struct {
 		RequireAuth bool
 	}
 	AutoCert simplecert.Config
-	PgSQL    pgx.ConnPoolConfig
+	PgSQL    pgxpool.Config
 	ESchool  struct {
 		APIKey    string
 		ReportURL string
@@ -74,9 +74,14 @@ type MarshalableConfig struct {
 		Database             string
 		User                 string
 		Password             string
-		MaxConnections       int
-		AcquireTimeout       time.Duration
+		MinConns             int
+		MaxConns             int
 		PreferSimpleProtocol bool
+		LazyConnect          bool
+		ConnectTimeout       time.Duration
+		MaxConnIdleTime      time.Duration
+		HealthCheckPeriod    time.Duration
+		MaxConnLifetime      time.Duration
 		RuntimeParams        map[string]string
 	}
 	ESchool struct {
@@ -103,13 +108,23 @@ type MarshalableConfig struct {
 // read in the config
 func init() {
 	// set defaults
-	copier.Copy(&Config.AutoCert, simplecert.Default)
-	Config.AutoCert.TLSAddress = "" // we probably use port 443 elsewhere
-	Config.Server.Listen = ":443"
-	Config.LDAP.Filter = "(&(objectClass=user)(objectCategory=Person))"
-	Config.LDAP.DateFormat = "20060102150405.0Z07"
-	Config.LDAP.PageSize = 10
-	Config.Helpdesk.MaxConcurentRequests = 1
+	var marshalableConfig MarshalableConfig
+	copier.Copy(&marshalableConfig.AutoCert, simplecert.Default)
+	marshalableConfig.AutoCert.TLSAddress = "" // we probably use port 443 elsewhere
+	marshalableConfig.Server.Listen = ":443"
+	marshalableConfig.LDAP.Filter = "(&(objectClass=user)(objectCategory=Person))"
+	marshalableConfig.LDAP.DateFormat = "20060102150405.0Z07"
+	marshalableConfig.LDAP.PageSize = 10
+	marshalableConfig.Helpdesk.MaxConcurentRequests = 1
+
+	// pgxPoolConfig is nested. Flatten defaults.
+	pgConfig, _ := pgxpool.ParseConfig("")
+	err := copier.Copy(&marshalableConfig.PgSQL, pgConfig)
+	jgh.PanicOnErr(err)
+	err = copier.Copy(&marshalableConfig.PgSQL, pgConfig.ConnConfig)
+	jgh.PanicOnErr(err)
+	err = copier.Copy(&marshalableConfig.PgSQL, pgConfig.ConnConfig.Config)
+	jgh.PanicOnErr(err)
 
 	// get "config.toml" file next to this executable
 	configTOML, err := ioutil.ReadFile(Path("config.toml"))
@@ -119,12 +134,25 @@ func init() {
 		jgh.PanicOnErr(err)
 	}
 
-	// read config file into global Config variable
-	err = toml.Unmarshal(configTOML, &Config)
+	// there is some private initialization in this object that we can't
+	// re-create by unmarshaling
+	Config.PgSQL = *pgConfig
+
+	// read config file into intermediate marshable config state
+	err = toml.Unmarshal(configTOML, &marshalableConfig)
+	jgh.PanicOnErr(err)
+
+	// copy fields to real config
+	err = copier.Copy(&Config, marshalableConfig)
+	jgh.PanicOnErr(err)
+
+	// pgxPoolConfig is nested, so we have to copy fields to all levels
+	err = copier.Copy(&Config.PgSQL.ConnConfig, marshalableConfig.PgSQL)
+	jgh.PanicOnErr(err)
+	err = copier.Copy(&Config.PgSQL.ConnConfig.Config, marshalableConfig.PgSQL)
 	jgh.PanicOnErr(err)
 
 	// print config with defaults filled in for debugging/ease of setup
-	var marshalableConfig MarshalableConfig
 	copier.Copy(&marshalableConfig, Config)
 	// hide passwords & keys
 	hide(&marshalableConfig.PgSQL.Password)
@@ -138,6 +166,11 @@ func init() {
 		Indentation("").
 		Encode(marshalableConfig)
 	fmt.Println()
+
+	// RMME TODO
+	fmt.Printf("===%+v\n", Config.PgSQL)
+	fmt.Printf("===%+v\n", Config.PgSQL.ConnConfig)
+	fmt.Printf("===%+v\n", Config.PgSQL.ConnConfig.Config)
 }
 
 var workingDirectoryMode = false

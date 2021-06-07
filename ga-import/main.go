@@ -21,12 +21,12 @@ func main() {
 
 	jgh.Try(120, 2, true, "", func() bool {
 		// start a transaction. If anything goes wrong, rollback.
-		tx, err := db.Begin()
+		tx, err := db.Begin(context.TODO())
 		jgh.PanicOnErr(err)
-		defer tx.Rollback()
+		defer tx.Rollback(context.TODO())
 
 		// clear the table
-		_, err = tx.Exec("TRUNCATE chromebooks")
+		_, err = tx.Exec(context.TODO(), "TRUNCATE chromebooks")
 		jgh.PanicOnErr(err)
 
 		deviceCount := 0
@@ -47,14 +47,14 @@ func main() {
 		jgh.PanicOnErr(err)
 
 		// commit transaction
-		err = tx.Commit()
+		err = tx.Commit(context.TODO())
 		jgh.PanicOnErr(err)
 
 		return true
 	})
 }
 
-func device2db(device admin.ChromeOsDevice, tx *pgx.Tx) error {
+func device2db(device admin.ChromeOsDevice, tx pgx.Tx) error {
 	var lanIP, wanIP string
 	if len(device.LastKnownNetwork) >= 1 {
 		lanIP = device.LastKnownNetwork[0].IpAddress
@@ -75,8 +75,7 @@ func device2db(device admin.ChromeOsDevice, tx *pgx.Tx) error {
 		isDevMode = new(bool)
 		*isDevMode = false
 	}
-
-	_, err := tx.Exec(
+	_, err := tx.Exec(context.TODO(),
 		`
 			INSERT INTO chromebooks (
 				serial,

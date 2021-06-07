@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"metaldetector/common"
 	"strconv"
 	"time"
@@ -69,12 +70,12 @@ func main() {
 	jgh.PanicOnErr(err)
 
 	// start a transaction. If anything goes wrong, rollback.
-	tx, err := db.Begin()
+	tx, err := db.Begin(context.TODO())
 	jgh.PanicOnErr(err)
-	defer tx.Rollback()
+	defer tx.Rollback(context.TODO())
 
 	// clear the table
-	_, err = tx.Exec("TRUNCATE users")
+	_, err = tx.Exec(context.TODO(), "TRUNCATE users")
 	jgh.PanicOnErr(err)
 
 	for _, entry := range results.Entries {
@@ -95,11 +96,11 @@ func main() {
 	}
 
 	// commit transaction
-	err = tx.Commit()
+	err = tx.Commit(context.TODO())
 	jgh.PanicOnErr(err)
 }
 
-func user2db(user User, tx *pgx.Tx) error {
+func user2db(user User, tx pgx.Tx) error {
 	var studentID *int
 	id, err := strconv.Atoi(user.StudentID)
 	if err == nil {
@@ -123,7 +124,7 @@ func user2db(user User, tx *pgx.Tx) error {
 		user.MiddleInitial = user.MiddleInitial[:1]
 	}
 
-	_, err = tx.Exec(
+	_, err = tx.Exec(context.TODO(),
 		`
 			INSERT INTO users (
 				username,

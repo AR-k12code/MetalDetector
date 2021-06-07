@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"metaldetector/common"
@@ -12,7 +13,7 @@ import (
 	"github.com/9072997/vas"
 	"github.com/foomo/simplecert"
 	"github.com/foomo/tlsconfig"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 // ClientPing represents the data in the JSON report submitted by
@@ -35,7 +36,7 @@ type GetResponse struct {
 	Challenge string `json:"challenge"`
 }
 
-func httpGetHandler(resp http.ResponseWriter, req *http.Request, db *pgx.ConnPool) {
+func httpGetHandler(resp http.ResponseWriter, req *http.Request, db *pgxpool.Pool) {
 	// allow CORS if request is from a Chrome extension
 	origin := strings.ToLower(req.Header.Get("Origin"))
 	if strings.HasPrefix(origin, "chrome-extension://") {
@@ -71,7 +72,7 @@ func httpGetHandler(resp http.ResponseWriter, req *http.Request, db *pgx.ConnPoo
 	resp.Write(respJSON)
 }
 
-func httpPostHandler(resp http.ResponseWriter, req *http.Request, db *pgx.ConnPool) {
+func httpPostHandler(resp http.ResponseWriter, req *http.Request, db *pgxpool.Pool) {
 	// decode request body json
 	var p ClientPing
 	err := json.NewDecoder(req.Body).Decode(&p)
@@ -129,11 +130,11 @@ func httpPostHandler(resp http.ResponseWriter, req *http.Request, db *pgx.ConnPo
 			)
 		}
 
-		tx, err := db.Begin()
+		tx, err := db.Begin(context.TODO())
 		jgh.PanicOnErr(err)
-		defer tx.Rollback()
+		defer tx.Rollback(context.TODO())
 
-		_, err = tx.Exec(
+		_, err = tx.Exec(context.TODO(),
 			`CALL insert_ping($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
 			ip,
 			common.EmptyAsNil(deviceID),
@@ -149,7 +150,7 @@ func httpPostHandler(resp http.ResponseWriter, req *http.Request, db *pgx.ConnPo
 			p.Email,
 		)
 		if err == nil {
-			err = tx.Commit()
+			err = tx.Commit(context.TODO())
 		}
 		if err != nil {
 			log.Print(err)
