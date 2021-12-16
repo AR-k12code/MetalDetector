@@ -27,7 +27,7 @@ type ClientPing struct {
 	LocalIPv6     *string  `json:"ipv6"`
 	Latitude      *float64 `json:"latitude"`
 	Longitude     *float64 `json:"longitude"`
-	Accuracy      *int     `json:"accuracy"`
+	Accuracy      *float64 `json:"accuracy"`
 	GeoTimestamp  *int     `json:"geoTimestamp"`
 	Email         *string  `json:"email"`
 }
