@@ -130,6 +130,23 @@ func httpPostHandler(resp http.ResponseWriter, req *http.Request, db *pgxpool.Po
 			)
 		}
 
+		// to avoid concurency issues with partitions on the database side
+		// only run one insert per user or device at a time
+		if p.Email == nil {
+			Lock("email-")
+			defer Unlock("email-")
+		} else {
+			Lock("email-" + *p.Email)
+			defer Unlock("email-" + *p.Email)
+		}
+		if p.Serial == nil {
+			Lock("serial-")
+			defer Unlock("serial-")
+		} else {
+			Lock("serial-" + *p.Serial)
+			defer Unlock("serial-" + *p.Serial)
+		}
+
 		tx, err := db.Begin(context.TODO())
 		jgh.PanicOnErr(err)
 		defer tx.Rollback(context.TODO())

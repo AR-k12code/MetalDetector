@@ -151,6 +151,8 @@ func init() {
 	jgh.PanicOnErr(err)
 	err = copier.Copy(&Config.PgSQL.ConnConfig.Config, marshalableConfig.PgSQL)
 	jgh.PanicOnErr(err)
+	err = copier.Copy(&Config.PgSQL.ConnConfig.Config.Fallbacks[0], marshalableConfig.PgSQL)
+	jgh.PanicOnErr(err)
 
 	// print config with defaults filled in for debugging/ease of setup
 	copier.Copy(&marshalableConfig, Config)
@@ -166,11 +168,6 @@ func init() {
 		Indentation("").
 		Encode(marshalableConfig)
 	fmt.Println()
-
-	// RMME TODO
-	fmt.Printf("===%+v\n", Config.PgSQL)
-	fmt.Printf("===%+v\n", Config.PgSQL.ConnConfig)
-	fmt.Printf("===%+v\n", Config.PgSQL.ConnConfig.Config)
 }
 
 var workingDirectoryMode = false
