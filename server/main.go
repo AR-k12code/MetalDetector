@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/9072997/jgh"
 	"github.com/9072997/vas"
@@ -72,7 +73,12 @@ func httpGetHandler(resp http.ResponseWriter, req *http.Request, db *pgxpool.Poo
 	resp.Write(respJSON)
 }
 
-func httpPostHandler(resp http.ResponseWriter, req *http.Request, db *pgxpool.Pool) {
+func httpPostHandler(
+	resp http.ResponseWriter,
+	req *http.Request,
+	db *pgxpool.Pool,
+	dataLake *pgxpool.Pool,
+) {
 	// decode request body json
 	var p ClientPing
 	err := json.NewDecoder(req.Body).Decode(&p)
@@ -172,12 +178,55 @@ func httpPostHandler(resp http.ResponseWriter, req *http.Request, db *pgxpool.Po
 		if err != nil {
 			log.Print(err)
 		}
+
+		// send the ping to the data lake
+		var timestamp *time.Time
+		if p.Timestamp != nil {
+			t := time.Unix(int64(*p.Timestamp), 0)
+			timestamp = &t
+		}
+		var sessionStart *time.Time
+		if p.SessionStart != nil {
+			t := time.Unix(int64(*p.SessionStart), 0)
+			sessionStart = &t
+		}
+		_, err = dataLake.Exec(context.TODO(),
+			`
+				INSERT INTO public.metaldetector (
+					request_ip,
+					client_timestamp,
+					session_start,
+					serial,
+					local_ipv4,
+					local_ipv6,
+					latitude,
+					longitude,
+					accuracy,
+					email
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+			`,
+			ip,
+			timestamp,
+			sessionStart,
+			p.Serial,
+			p.LocalIPv4,
+			p.LocalIPv6,
+			p.Latitude,
+			p.Longitude,
+			p.Accuracy,
+			p.Email,
+		)
+		if err != nil {
+			log.Print(err)
+		}
 	}()
 }
 
 func main() {
 	db := common.PGXPool(0)
 	defer db.Close()
+	dataLake := common.PGXDataLake()
+	defer dataLake.Close()
 
 	http.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
 		// check if this is a GET or POST request and divert to the correct
@@ -185,7 +234,7 @@ func main() {
 		if req.Method == http.MethodGet {
 			httpGetHandler(resp, req, db)
 		} else {
-			httpPostHandler(resp, req, db)
+			httpPostHandler(resp, req, db, dataLake)
 		}
 	})
 	err := simplecert.ListenAndServeTLSCustom(

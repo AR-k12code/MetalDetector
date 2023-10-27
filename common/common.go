@@ -25,3 +25,10 @@ func PGXPool(maxConnections int) *pgxpool.Pool {
 	jgh.PanicOnErr(err)
 	return pool
 }
+
+func PGXDataLake() *pgxpool.Pool {
+	config := Config.DataLake
+	pool, err := pgxpool.ConnectConfig(context.TODO(), &config)
+	jgh.PanicOnErr(err)
+	return pool
+}

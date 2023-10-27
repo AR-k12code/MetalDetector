@@ -24,6 +24,7 @@ var Config = struct {
 	}
 	AutoCert simplecert.Config
 	PgSQL    pgxpool.Config
+	DataLake pgxpool.Config
 	ESchool  struct {
 		APIKey    string
 		ReportURL string
@@ -84,6 +85,22 @@ type MarshalableConfig struct {
 		MaxConnLifetime      time.Duration
 		RuntimeParams        map[string]string
 	}
+	DataLake struct {
+		Host                 string
+		Port                 uint16
+		Database             string
+		User                 string
+		Password             string
+		MinConns             int
+		MaxConns             int
+		PreferSimpleProtocol bool
+		LazyConnect          bool
+		ConnectTimeout       time.Duration
+		MaxConnIdleTime      time.Duration
+		HealthCheckPeriod    time.Duration
+		MaxConnLifetime      time.Duration
+		RuntimeParams        map[string]string
+	}
 	ESchool struct {
 		APIKey    string
 		ReportURL string
@@ -126,6 +143,15 @@ func init() {
 	err = copier.Copy(&marshalableConfig.PgSQL, pgConfig.ConnConfig.Config)
 	jgh.PanicOnErr(err)
 
+	// same for data lake
+	dataLakeConfig, _ := pgxpool.ParseConfig("")
+	err = copier.Copy(&marshalableConfig.DataLake, dataLakeConfig)
+	jgh.PanicOnErr(err)
+	err = copier.Copy(&marshalableConfig.DataLake, dataLakeConfig.ConnConfig)
+	jgh.PanicOnErr(err)
+	err = copier.Copy(&marshalableConfig.DataLake, dataLakeConfig.ConnConfig.Config)
+	jgh.PanicOnErr(err)
+
 	// get "config.toml" file next to this executable
 	configTOML, err := ioutil.ReadFile(Path("config.toml"))
 	if os.IsNotExist(err) {
@@ -137,6 +163,7 @@ func init() {
 	// there is some private initialization in this object that we can't
 	// re-create by unmarshaling
 	Config.PgSQL = *pgConfig
+	Config.DataLake = *dataLakeConfig
 
 	// read config file into intermediate marshable config state
 	err = toml.Unmarshal(configTOML, &marshalableConfig)
@@ -154,10 +181,19 @@ func init() {
 	err = copier.Copy(&Config.PgSQL.ConnConfig.Config.Fallbacks[0], marshalableConfig.PgSQL)
 	jgh.PanicOnErr(err)
 
+	// same for data lake
+	err = copier.Copy(&Config.DataLake.ConnConfig, marshalableConfig.DataLake)
+	jgh.PanicOnErr(err)
+	err = copier.Copy(&Config.DataLake.ConnConfig.Config, marshalableConfig.DataLake)
+	jgh.PanicOnErr(err)
+	err = copier.Copy(&Config.DataLake.ConnConfig.Config.Fallbacks[0], marshalableConfig.DataLake)
+	jgh.PanicOnErr(err)
+
 	// print config with defaults filled in for debugging/ease of setup
 	copier.Copy(&marshalableConfig, Config)
 	// hide passwords & keys
 	hide(&marshalableConfig.PgSQL.Password)
+	hide(&marshalableConfig.DataLake.Password)
 	hide(&marshalableConfig.ESchool.APIKey)
 	hide(&marshalableConfig.LDAP.Password)
 	hide(&marshalableConfig.Helpdesk.APIKey)
