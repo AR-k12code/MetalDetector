@@ -1,0 +1,30 @@
+{
+	"type": "object",
+	"properties": {
+		"server": {
+			"title": "Server URL",
+			"description": "reports will be periodically POSTed to this URL",
+			"type": "string"
+		},
+		"useAuth": {
+			"title": "Use Device Authorization",
+			"description": "Attempt to authenticate with the server using the Chrome Verified Access API. The server must support this.",
+			"type": "boolean"
+		},
+		"interval": {
+			"title": "Report Interval",
+			"description": "How frequently you want reports in minutes.",
+			"type": "integer"
+		},
+		"maxGeoAge": {
+			"title": "Max Geolocation Age",
+			"description": "How stale (in seconds) is geolocation allowed to be. A lower value will result in higher power usage.",
+			"type": "integer"
+		},
+		"display": {
+			"title": "Display URL",
+			"description": "URL to display in kiosk app. The serial number will be appended as the URL fragment.",
+			"type": "string"
+		}
+	}
+}
