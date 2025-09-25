@@ -5,11 +5,13 @@ function serializeArrayBuffer(buf) {
 	for (var i = 0; i < len; i++) {
 		binary += String.fromCharCode(bytes[i]);
 	}
-	return window.btoa(binary);
+	// Use btoa from global scope (available in service workers)
+	return btoa(binary);
 };
 
 function deserializeArrayBuffer(str) {
-	let binary_string = window.atob(str);
+	// Use atob from global scope (available in service workers)
+	let binary_string = atob(str);
 	let len = binary_string.length;
 	let bytes = new Uint8Array(len);
 	for (var i = 0; i < len; i++) {
@@ -37,7 +39,7 @@ chrome.alarms.get(alarm => {
 });
 
 function sessionStart() {
-	chrome.storage.local.set({ sessionStart: timestamp() }, sendReport());
+	chrome.storage.local.set({ sessionStart: timestamp() }, sendReport);
 	console.log('session start');
 }
 
@@ -87,37 +89,79 @@ function reportData(callback) {
 			chrome.enterprise.networkingAttributes.getNetworkDetails(net =>
 				chrome.storage.managed.get({ maxGeoAge: 300 }, settings =>
 					chrome.storage.local.get('sessionStart', storage =>
-						navigator.geolocation.getCurrentPosition(geo => {
-							callback({
-								timestamp: timestamp(),
-								email: user.email,
-								serial: serial,
-								ipv4: net.ipv4,
-								ipv6: net.ipv6,
-								geoTimestamp: Math.floor(geo.timestamp / 1000),
-								latitude: geo.coords.latitude,
-								longitude: geo.coords.longitude,
-								accuracy: geo.coords.accuracy,
-								sessionStart: storage.sessionStart
-							});
-						}, err => {
-							callback({
-								timestamp: timestamp(),
-								email: user.email,
-								serial: serial,
-								ipv4: net.ipv4,
-								ipv6: net.ipv6,
-								sessionStart: storage.sessionStart,
-							});
-							console.log('geolocation failed', err);
-						}, {
-							enableHighAccuracy: true,
-							timeout: 10 * 1000,
-							maximumAge: settings.maxGeoAge * 1000
-						})
+						getGeolocation(settings.maxGeoAge)
+							.then(geo => {
+								callback({
+									timestamp: timestamp(),
+									email: user.email,
+									serial: serial,
+									ipv4: net.ipv4,
+									ipv6: net.ipv6,
+									geoTimestamp: Math.floor(geo.timestamp / 1000),
+									latitude: geo.coords.latitude,
+									longitude: geo.coords.longitude,
+									accuracy: geo.coords.accuracy,
+									sessionStart: storage.sessionStart
+								});
+							})
+							.catch(err => {
+								callback({
+									timestamp: timestamp(),
+									email: user.email,
+									serial: serial,
+									ipv4: net.ipv4,
+									ipv6: net.ipv6,
+									sessionStart: storage.sessionStart,
+								});
+								console.log('geolocation failed', err);
+							})
 					)
 				)
 			)
 		)
 	);
+}
+
+async function getGeolocation(maxGeoAge) {
+	try {
+		// Check if offscreen document already exists
+		const existingContexts = await chrome.runtime.getContexts({
+			contextTypes: ['OFFSCREEN_DOCUMENT']
+		});
+
+		if (existingContexts.length === 0) {
+			// Create offscreen document for geolocation access
+			await chrome.offscreen.createDocument({
+				url: 'offscreen.html',
+				reasons: ['GEOLOCATION'],
+				justification: 'Tracking to find lost enterprise devices'
+			});
+		}
+
+		// Send message to offscreen document to get location
+		return new Promise((resolve, reject) => {
+			chrome.runtime.sendMessage({
+				type: 'GET_GEOLOCATION',
+				options: {
+					enableHighAccuracy: true,
+					timeout: 60 * 1000,
+					maximumAge: maxGeoAge * 1000
+				}
+			}, response => {
+				chrome.offscreen.closeDocument().catch(() => {
+					// Ignore errors when closing document
+				});
+				if (response && response.error) {
+					reject(new Error(response.error));
+				} else if (response && response.position) {
+					resolve(response.position);
+				} else {
+					reject(new Error('No response from offscreen document'));
+				}
+			});
+		});
+	} catch (error) {
+		console.error('Error creating offscreen document:', error);
+		throw error;
+	}
 }
